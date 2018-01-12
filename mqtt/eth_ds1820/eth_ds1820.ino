@@ -1,18 +1,10 @@
 /*
-  DHCP-based IP printer
-
-  This sketch uses the DHCP extensions to the Ethernet library
-  to get an IP address via DHCP and print the address obtained.
-  using an Arduino Wiznet Ethernet shield.
-
+  do not use the dhcp extension - because the binary file becomes to big for a nano!
   Circuit:
    Ethernet shield attached to pins 10, 11, 12, 13
 
-  created 12 April 2011
-  modified 9 Apr 2012
-  by Tom Igoe
-  modified 02 Sept 2015
-  by Arturo Guadalupi
+  created 12.01.2017
+  by Markus Buehler, DK9MBS (http://dk9mbs.de)
 
 */
 
@@ -24,9 +16,10 @@
 
 #ifdef ENC28J60
   #include <UIPEthernet.h>
+  #warning use ENC28J60 eth hardware!!!
 #else
   #include <Ethernet.h>
-  #warning do not use en net hardware!!!
+  #warning do not use ENC28J60 eth hardware!!!
 #endif
 
 #include <SPI.h>
@@ -91,7 +84,9 @@ void setup() {
   #endif
   delay (500);
   Ethernet.begin(mac, ip);
+  #ifdef DEBUG
   printIPAddress();
+  #endif
   delay(250);
   sensors.begin();
   delay(250);
@@ -109,7 +104,9 @@ void loop() {
   sensors.requestTemperatures();
   delay(1000);
   char buf[7];
+  #ifdef DEBUG
   Serial.println(sensors.getTempCByIndex(0));
+  #endif
   dtostrf(sensors.getTempCByIndex(0),3,3,buf);
   phlClient.publish("test", buf);
   //phlClient.publish("test", "19.6");
@@ -124,9 +121,9 @@ void loop() {
 
 }
 
+#ifdef DEBUG
 void printIPAddress()
 {
-#ifdef DEBUG
   Serial.print("My IP address: ");
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
     // print the value of each byte of the IP address:
@@ -135,5 +132,6 @@ void printIPAddress()
   }
 
   Serial.println();
-#endif
 }
+#endif
+
