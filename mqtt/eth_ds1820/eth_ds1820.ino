@@ -46,6 +46,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 EthernetClient client;
 PubSubClient phlClient(server, 1883, callback, client);
 
+
 #ifdef DS1820
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
@@ -90,6 +91,16 @@ void setup() {
   delay(250);
   sensors.begin();
   delay(250);
+
+
+
+  DeviceAddress deviceAddress; //adresse
+  for(int x=0;x<sensors.getDeviceCount();x++){
+    if (!sensors.getAddress(deviceAddress, x)) Serial.println("Unable to find address for Device 0"); //adresse
+    printAddress(deviceAddress);
+    sensors.setResolution(deviceAddress, TEMP_10_BIT);
+    Serial.println(sensors.getResolution(deviceAddress), DEC); 
+  }
 }
 
 void loop() {
@@ -103,14 +114,17 @@ void loop() {
 
   sensors.requestTemperatures();
   delay(1000);
-  char buf[7];
-  #ifdef DEBUG
-  Serial.println(sensors.getTempCByIndex(0));
-  #endif
-  dtostrf(sensors.getTempCByIndex(0),3,3,buf);
-  phlClient.publish("test", buf);
-  //phlClient.publish("test", "19.6");
 
+  char buf[7];
+  DeviceAddress deviceAddress; //adresse
+
+  for(int x=0;x<sensors.getDeviceCount();x++) {
+    if (!sensors.getAddress(deviceAddress, x)) Serial.println("Unable to find address for Device"); 
+    dtostrf(sensors.getTempC(deviceAddress),3,3,buf);
+    //dtostrf(sensors.getTempCByIndex(0),3,3,buf);
+    phlClient.publish("test", buf);
+  }
+  
   #ifdef DEBUG
   Serial.println("sended!!!");
   #endif
@@ -121,7 +135,7 @@ void loop() {
 
 }
 
-#ifdef DEBUG
+
 void printIPAddress()
 {
   Serial.print("My IP address: ");
@@ -133,5 +147,12 @@ void printIPAddress()
 
   Serial.println();
 }
-#endif
 
+void printAddress(DeviceAddress deviceAddress) {
+  for (uint8_t i = 0; i < 8; i++) {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+    Serial.print(":");
+  }
+  Serial.println("");
+}
