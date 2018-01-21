@@ -21,11 +21,8 @@
   #include <Ethernet.h>
   #warning do not use ENC28J60 eth hardware!!!
 #endif
-
-#include <SPI.h>
 #include <PubSubClient.h>
 #include <OneWire.h>
-#include <DallasTemperature.h>
 
 // Enter a MAC address for your controller below.
 byte mac[] = {0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0xB9};
@@ -45,13 +42,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 EthernetClient client;
 PubSubClient phlClient(server, 1883, callback, client);
-
-
-#ifdef DS1820
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-#warning DALLAS!!!!
-#endif
+OneWire ds(ONE_WIRE_BUS);
 
 void reconnect() {
   // Loop until we're reconnected
@@ -79,58 +70,85 @@ void reconnect() {
 
 void setup() {
   Serial.begin(9600);
-
-  #ifdef DS1820
-  OneWire oneWire(ONE_WIRE_BUS);
-  #endif
-  delay (500);
   Ethernet.begin(mac, ip);
   #ifdef DEBUG
   printIPAddress();
   #endif
   delay(250);
-  sensors.begin();
-  delay(250);
-
-
-
-  DeviceAddress deviceAddress; //adresse
-  for(int x=0;x<sensors.getDeviceCount();x++){
-    if (!sensors.getAddress(deviceAddress, x)) Serial.println("Unable to find address for Device 0"); //adresse
-    printAddress(deviceAddress);
-    sensors.setResolution(deviceAddress, TEMP_10_BIT);
-    Serial.println(sensors.getResolution(deviceAddress), DEC); 
-  }
 }
 
 void loop() {
-  #ifdef DEBUG
-  Serial.print("sending...");
-  #endif
+  //delay(10000);
 
   if (!client.connected()) {
     reconnect();
   }
 
-  sensors.requestTemperatures();
-  delay(1000);
+  byte i;
+  byte present = 0;
+  byte data[12];
+  byte addr[8];
 
-  char buf[7];
-  DeviceAddress deviceAddress; //adresse
-
-  for(int x=0;x<sensors.getDeviceCount();x++) {
-    if (!sensors.getAddress(deviceAddress, x)) Serial.println("Unable to find address for Device"); 
-    dtostrf(sensors.getTempC(deviceAddress),3,3,buf);
-    //dtostrf(sensors.getTempCByIndex(0),3,3,buf);
-    phlClient.publish("test", buf);
-  }
+  while(ds.search(addr)) {  
+    //if ( !ds.search(addr)) {
+    //  Serial.print("No more addresses.\n");
+    //  ds.reset_search();
+    //  delay(250);
+    //  return;
+    //}
+    
+    Serial.print("R=");
+    for( i = 0; i < 8; i++) {
+      Serial.print(addr[i], HEX);
+      Serial.print(" ");
+    }
   
-  #ifdef DEBUG
-  Serial.println("sended!!!");
-  #endif
+    if ( OneWire::crc8( addr, 7) != addr[7]) {
+        Serial.print("CRC is not valid!\n");
+        return;
+    }
+    
+    if ( addr[0] != 0x10) {
+        Serial.print("Device is not a DS18S20 family device.\n");
+        return;
+    }
+  
+    // The DallasTemperature library can do all this work for you!
+  
+    ds.reset();
+    ds.select(addr);
+    ds.write(0x44,1);         // start conversion, with parasite power on at the end
+    
+    delay(1000);     // maybe 750ms is enough, maybe not
+    // we might do a ds.depower() here, but the reset will take care of it.
+    
+    present = ds.reset();
+    ds.select(addr);    
+    ds.write(0xBE);         // Read Scratchpad
+  
+    Serial.print("P=");
+    Serial.print(present,HEX);
+    Serial.print(" ");
+    for ( i = 0; i < 9; i++) {           // we need 9 bytes
+      data[i] = ds.read();
+      Serial.print(data[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.print(" CRC=");
+    Serial.print( OneWire::crc8( data, 8), HEX);
+    Serial.println();
 
-  delay(4000);
-
+    int16_t temp = ((data[1] & 0x80) << 8) | (data[0] >> 1);
+    Serial.println(temp, DEC);
+    
+    //float tempC = 0;
+    char buf[15];
+    itoa(temp,buf,10);
+    //dtostrf(tempC,7,3,buf);
+    phlClient.publish("test", buf );
+    phlClient.loop();
+  }
+  delay(10000);
   phlClient.loop();
 
 }
@@ -148,11 +166,4 @@ void printIPAddress()
   Serial.println();
 }
 
-void printAddress(DeviceAddress deviceAddress) {
-  for (uint8_t i = 0; i < 8; i++) {
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-    Serial.print(":");
-  }
-  Serial.println("");
-}
+
