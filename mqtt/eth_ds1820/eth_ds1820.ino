@@ -78,8 +78,6 @@ void setup() {
 }
 
 void loop() {
-  //delay(10000);
-
   if (!client.connected()) {
     reconnect();
   }
@@ -95,7 +93,7 @@ void loop() {
       Serial.print(addr[i], HEX);
       Serial.print(" ");
     }
-  
+    
     if ( OneWire::crc8( addr, 7) != addr[7]) {
         Serial.print("CRC is not valid!\n");
         return;
@@ -106,8 +104,6 @@ void loop() {
         return;
     }
   
-    // The DallasTemperature library can do all this work for you!
-  
     ds.reset();
     ds.select(addr);
     ds.write(0x44,1);         // start conversion, with parasite power on at the end
@@ -117,15 +113,13 @@ void loop() {
     
     present = ds.reset();
     ds.select(addr);    
-    ds.write(0xBE);         // Read Scratchpad
+    ds.write(0xBE);         
   
     Serial.print("P=");
     Serial.print(present,HEX);
     Serial.print(" ");
 
-    char tmp[10];
-    char tmpchar;
-    for ( i = 0; i < 9; i++) {           // we need 9 bytes
+    for ( i = 0; i < 9; i++) {           
       data[i] = ds.read();
       Serial.print(data[i], HEX);
       Serial.print(" ");
@@ -144,11 +138,10 @@ void loop() {
     phlClient.publish("test", buf );
     phlClient.loop();
   }
-  delay(1000);
+  delay(10000);
   phlClient.loop();
 
 }
-
 
 void printIPAddress()
 {
