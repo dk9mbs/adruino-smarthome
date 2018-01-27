@@ -129,9 +129,6 @@ void loop() {
       data[i] = ds.read();
       Serial.print(data[i], HEX);
       Serial.print(" ");
-      
-      itoa(tmpchar,data[i],10);
-      strcat (tmp,tmpchar);
     }
     Serial.print(" CRC=");
     Serial.print( OneWire::crc8( data, 8), HEX);
