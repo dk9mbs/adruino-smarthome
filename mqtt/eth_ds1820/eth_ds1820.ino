@@ -131,16 +131,97 @@ void loop() {
     int16_t temp = ((data[1] & 0x80) << 8) | (data[0] >> 1);
     Serial.println(temp, DEC);
     
-    //float tempC = 0;
-    char buf[15];
+    char buf[4];
     itoa(temp,buf,10);
     //dtostrf(tempC,7,3,buf);
-    phlClient.publish("test", buf );
+    
+    char adinfo[16];
+    byte2char(addr,8,adinfo);
+
+    char topic[25]="temp/";
+    strcat(topic,adinfo);
+    Serial.println(buf);
+    phlClient.publish(topic, buf );
     phlClient.loop();
   }
-  delay(10000);
+  delay(1000);
   phlClient.loop();
 
+}
+
+void byte2char(byte input[], int len, char * result) 
+{
+  int8_t offset=0;
+  int8_t x=0;
+  for (x=0;x<len;x++)
+  {
+    uint8_t lsn = (input[x] & 0x0F);
+    uint8_t msn = ((input[x] & 0xF0) >> 4);
+
+    char lsnchar = nibble2char(lsn);
+    char msnchar = nibble2char(msn);
+
+    result[offset+x] = msnchar;
+    result[offset+x+1] = lsnchar;
+
+    offset++;
+  }
+  result[offset+x]='\0';
+}
+
+char nibble2char(uint8_t nibble){
+  switch (nibble) 
+  {
+    case 0:
+      return '0';
+      break;
+    case 1:
+      return '1';
+      break;
+    case 2:
+      return '2';
+      break;
+    case 3:
+      return '3';
+      break;
+    case 4:
+      return '4';
+      break;
+    case 5:
+      return '5';
+      break;
+    case 6:
+      return '6';
+      break;
+    case 7:
+      return '7';
+      break;
+    case 8:
+      return '8';
+      break;
+    case 9:
+      return '9';
+      break;
+    case 10:
+      return 'A';
+      break;
+    case 11:
+      return 'B';
+      break;
+    case 12:
+      return 'C';
+      break;
+    case 13:
+      return 'D';
+      break;
+    case 14:
+      return 'E';
+      break;
+    case 15:
+      return 'F';
+      break;
+  }
+    
 }
 
 void printIPAddress()
