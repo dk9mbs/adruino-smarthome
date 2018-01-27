@@ -90,13 +90,6 @@ void loop() {
   byte addr[8];
 
   while(ds.search(addr)) {  
-    //if ( !ds.search(addr)) {
-    //  Serial.print("No more addresses.\n");
-    //  ds.reset_search();
-    //  delay(250);
-    //  return;
-    //}
-    
     Serial.print("R=");
     for( i = 0; i < 8; i++) {
       Serial.print(addr[i], HEX);
@@ -129,10 +122,16 @@ void loop() {
     Serial.print("P=");
     Serial.print(present,HEX);
     Serial.print(" ");
+
+    char tmp[10];
+    char tmpchar;
     for ( i = 0; i < 9; i++) {           // we need 9 bytes
       data[i] = ds.read();
       Serial.print(data[i], HEX);
       Serial.print(" ");
+      
+      itoa(tmpchar,data[i],10);
+      strcat (tmp,tmpchar);
     }
     Serial.print(" CRC=");
     Serial.print( OneWire::crc8( data, 8), HEX);
@@ -148,7 +147,7 @@ void loop() {
     phlClient.publish("test", buf );
     phlClient.loop();
   }
-  delay(10000);
+  delay(1000);
   phlClient.loop();
 
 }
