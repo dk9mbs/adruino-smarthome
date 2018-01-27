@@ -141,10 +141,10 @@ void loop() {
     char topic[25]="temp/";
     strcat(topic,adinfo);
     Serial.println(buf);
-    phlClient.publish(topic, buf );
+    phlClient.publish(topic, buf ,true );
     phlClient.loop();
   }
-  delay(1000);
+  delay(10000);
   phlClient.loop();
 
 }
@@ -228,7 +228,6 @@ void printIPAddress()
 {
   Serial.print("My IP address: ");
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
-    // print the value of each byte of the IP address:
     Serial.print(Ethernet.localIP()[thisByte], DEC);
     Serial.print(".");
   }
