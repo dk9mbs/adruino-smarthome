@@ -128,13 +128,15 @@ void loop() {
     Serial.print( OneWire::crc8( data, 8), HEX);
     Serial.println();
 
+    uint8_t decimal = data[0] & 0x01;
     int16_t temp = ((data[1] & 0x80) << 8) | (data[0] >> 1);
+    temp=temp*10;
+    if(decimal==1) temp+=5;
     Serial.println(temp, DEC);
     
     char buf[4];
     itoa(temp,buf,10);
-    //dtostrf(tempC,7,3,buf);
-    
+
     char adinfo[16];
     byte2char(addr,8,adinfo);
 
